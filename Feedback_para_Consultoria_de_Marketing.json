@@ -1,0 +1,569 @@
+{
+  "name": "Feedback para Consultoria de Marketing",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 21
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1536,
+        -320
+      ],
+      "id": "5f807918-d37c-413a-b3d6-e5dbd105e547",
+      "name": "Agendar 21h"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1104,
+        -320
+      ],
+      "id": "4e485ab4-4157-49cd-ad09-816b85ead061",
+      "name": "Loop Consultores"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "84fbd362-7552-4830-8b65-c5fcb2caeab5",
+              "name": "data",
+              "value": "={{ $json.Data }}",
+              "type": "string"
+            },
+            {
+              "id": "2246c07b-5e54-4814-816a-281588bba156",
+              "name": "cliente",
+              "value": "={{ $json.Nome }}",
+              "type": "string"
+            },
+            {
+              "id": "f36f0148-2cae-4822-852c-55c82100ccb2",
+              "name": "consultor",
+              "value": "={{ $json['Por qual consultor você foi atendido?'] }}",
+              "type": "string"
+            },
+            {
+              "id": "d7b1f981-c9c5-4533-b4ee-3e9082177c08",
+              "name": "objetivo",
+              "value": "={{ $json['Qual foi o principal objetivo da consultoria?'] }}",
+              "type": "string"
+            },
+            {
+              "id": "3fb2eea4-ca48-404d-b258-2c7f3603ca89",
+              "name": "satisfação",
+              "value": "={{ $json['Em uma escala de 1 a 10, quão satisfeito(a) você ficou com a experiência geral da consultoria de hoje?'] }}",
+              "type": "number"
+            },
+            {
+              "id": "639ad37b-091c-425f-bfa6-acd7f9448121",
+              "name": "conhecimento e expertise",
+              "value": "={{ $json['Avalie a performance do consultor nos seguintes aspectos: [Conhecimento Técnico e Expertise]'] }}",
+              "type": "string"
+            },
+            {
+              "id": "145493b1-060f-4099-bf68-96d439d61ab6",
+              "name": "performance no negocio",
+              "value": "={{ $json['Avalie a performance do consultor nos seguintes aspectos: [Capacidade de Entender as Necessidades do Negócio]'] }}",
+              "type": "string"
+            },
+            {
+              "id": "57974d71-64b5-4354-bfc0-c5f3645d8ba7",
+              "name": "performance na proatividade",
+              "value": "={{ $json['Avalie a performance do consultor nos seguintes aspectos: [Proatividade e Sugestão de Soluções Relevantes]'] }}",
+              "type": "string"
+            },
+            {
+              "id": "8a661db7-15ac-4e70-8025-ff1e3d381af8",
+              "name": "frequencia recomendação",
+              "value": "={{ $json['Com que frequência você recomendaria este consultor a outras empresas?'] }}",
+              "type": "string"
+            },
+            {
+              "id": "43c4300d-a096-4b5f-8128-6f008aaf4fa7",
+              "name": "sugestoes de melhorias",
+              "value": "={{ $json['Se houver, quais são as sugestões de melhoria para futuras consultorias?'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -624,
+        -304
+      ],
+      "id": "277320c0-6dd9-4c74-8a3c-01daba9b2543",
+      "name": "Dados"
+    },
+    {
+      "parameters": {
+        "fieldsToSummarize": {
+          "values": [
+            {
+              "aggregation": "average",
+              "field": "satisfação"
+            },
+            {
+              "aggregation": "concatenate",
+              "field": "sugestoes de melhorias",
+              "separateBy": "other",
+              "customSeparator": "=;\n\nPRÓXIMA SUGESTÃO"
+            },
+            {
+              "field": "cliente"
+            }
+          ]
+        },
+        "options": {
+          "outputFormat": "separateItems"
+        }
+      },
+      "type": "n8n-nodes-base.summarize",
+      "typeVersion": 1.1,
+      "position": [
+        -416,
+        -304
+      ],
+      "id": "cdd34b8e-2f8f-4676-a1c5-80e5dc88df71",
+      "name": "Analisar Dados"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "414a32f0-0786-4e74-9087-714f2fffd9c1",
+              "leftValue": "={{ $json['average_satisfação'] }}",
+              "rightValue": 7,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -208,
+        -304
+      ],
+      "id": "3d7026ec-0bfd-450d-9bf9-9a8d012288e6",
+      "name": "Média <7"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Nome do Consultor:{{ $('Loop Consultores').item.json.Nome }}\n\nMedia do dia:{{ $('Analisar Dados').item.json['average_satisfação'] }}\nTotal de Avaliações:{{ $json.count_cliente }}\n\nSuhestoes de Melhorias:{{ $('Analisar Dados').item.json.concatenated_sugestoes_de_melhorias }}",
+        "options": {
+          "systemMessage": "Você é um Supervisor de Qualidade analisando o desempenho de um consultor de \nmarketing. \nObjetivo: escrever um e-mail de feedback construtivo, já que a média do dia \nficou ABAIXO da meta (nota < 7). \n## INSTRUCÕES DE ANÁLISE \n1. Sintetize: não liste cada comentário individualmente. Se houver 10 \ncomentários sobre \"atraso\", agrupe em um único ponto. \n2. Identifique temas principais (clareza, pontualidade, empatia, domínio \ntécnico, proatividade). \n3. Se a lista estiver vazia ou irrelevante (\"não\", \"ok\"), assuma que faltou \nconexão com o cliente e oriente sobre proatividade. \n4. Tom: profissional, direto, focado em mentoria (não punição). \n## FORMATO DE SAÍDA \nRetorne APENAS o HTML do corpo do e-mail (sem tags html/head ou crases). \nUse: - p para parágrafos - b para destaques - ul e li para listar pontos de melhoria \n## ESTRUTURA DO CONTEÚDO \n1. Saudação chamando o consultor pelo nome (use o nome que vem no prompt) \n2. Contexto sobre a nota do dia abaixo da meta \n3. Resumo geral do sentimento dos clientes (visão macro) \n4. Lista com os principais pontos de fricção agrupados por tema \n5. Recomendação prática e acionável para a próxima consultoria \n6. Mencionar que a planilha em anexo contém todas as avaliações do dia \n7. Encerramento empático e motivador \nNUNCA use quebra de linha textual. Sempre HTML."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        0,
+        -320
+      ],
+      "id": "cd71cbee-4068-4d00-b15d-10024a4b3445",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        -48
+      ],
+      "id": "863995ed-0325-463e-afca-2523d0bdf856",
+      "name": "Gemini-2.5-Flash"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Ckckheo5MhRULQakTLn9erwFmR8gqNN4oZwu4KhGGIQ",
+          "mode": "list",
+          "cachedResultName": "Avalia_Consultoria__Marketing_respostas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Ckckheo5MhRULQakTLn9erwFmR8gqNN4oZwu4KhGGIQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1966504002,
+          "mode": "list",
+          "cachedResultName": "Respostas ao formulário 2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Ckckheo5MhRULQakTLn9erwFmR8gqNN4oZwu4KhGGIQ/edit#gid=1966504002"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -848,
+        -304
+      ],
+      "id": "e02b4958-2021-4990-97b7-7054ed3b2c99",
+      "name": "BuscarAvaliações",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Ckckheo5MhRULQakTLn9erwFmR8gqNN4oZwu4KhGGIQ",
+          "mode": "list",
+          "cachedResultName": "Avalia_Consultoria__Marketing_respostas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Ckckheo5MhRULQakTLn9erwFmR8gqNN4oZwu4KhGGIQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1523455807,
+          "mode": "list",
+          "cachedResultName": "Consultores",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Ckckheo5MhRULQakTLn9erwFmR8gqNN4oZwu4KhGGIQ/edit#gid=1523455807"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -1328,
+        -320
+      ],
+      "id": "5fa1ae42-fd40-4daa-9f23-70102c02ec4f",
+      "name": "BuscarConsultores"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Ckckheo5MhRULQakTLn9erwFmR8gqNN4oZwu4KhGGIQ",
+          "mode": "list",
+          "cachedResultName": "Avalia_Consultoria__Marketing_respostas",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Ckckheo5MhRULQakTLn9erwFmR8gqNN4oZwu4KhGGIQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1966504002,
+          "mode": "list",
+          "cachedResultName": "Respostas ao formulário 2",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Ckckheo5MhRULQakTLn9erwFmR8gqNN4oZwu4KhGGIQ/edit#gid=1966504002"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -832,
+        -16
+      ],
+      "id": "185ed71a-9e60-491c-af11-39097b635fe1",
+      "name": "BuscarAvaliações1",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "966841b7-0529-4832-a1ae-7183906a237b",
+              "name": "Data",
+              "value": "={{ $json.Data }}",
+              "type": "string"
+            },
+            {
+              "id": "c29426a4-1a48-4e55-801b-9347ff5faac2",
+              "name": "Cliente",
+              "value": "={{ $json.Nome }}",
+              "type": "string"
+            },
+            {
+              "id": "40063cb9-b968-4605-947a-c8ef708bedca",
+              "name": "Consultor",
+              "value": "={{ $json['Por qual consultor você foi atendido?'] }}",
+              "type": "string"
+            },
+            {
+              "id": "3a87b279-7db3-494f-b25c-f270d402423c",
+              "name": "Objetivo_Consultoria",
+              "value": "={{ $json['Qual foi o principal objetivo da consultoria?'] }}",
+              "type": "string"
+            },
+            {
+              "id": "434fc4d1-3281-4e56-b05b-71021120068c",
+              "name": "Satisfação",
+              "value": "={{ $json['Em uma escala de 1 a 10, quão satisfeito(a) você ficou com a experiência geral da consultoria de hoje?'] }}",
+              "type": "number"
+            },
+            {
+              "id": "1d331697-7de8-405e-ab71-bc60cfd51d96",
+              "name": "Performance_Conhecimento",
+              "value": "={{ $json['Avalie a performance do consultor nos seguintes aspectos: [Conhecimento Técnico e Expertise]'] }}",
+              "type": "string"
+            },
+            {
+              "id": "cc3e7dfb-d838-4abb-ba12-67a331af7529",
+              "name": "Performance_Negócio",
+              "value": "={{ $json['Avalie a performance do consultor nos seguintes aspectos: [Capacidade de Entender as Necessidades do Negócio]'] }}",
+              "type": "string"
+            },
+            {
+              "id": "c2313876-99b5-4163-ae09-3ba2edb857ab",
+              "name": "Proatividae",
+              "value": "={{ $json['Avalie a performance do consultor nos seguintes aspectos: [Proatividade e Sugestão de Soluções Relevantes]'] }}",
+              "type": "string"
+            },
+            {
+              "id": "2c0b2a1a-a528-4d58-8b0f-2172b91a2f00",
+              "name": "Recomendação",
+              "value": "={{ $json['Com que frequência você recomendaria este consultor a outras empresas?'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -624,
+        -16
+      ],
+      "id": "d36d1dde-cea3-47f2-977f-59bdc99d3255",
+      "name": "DadosXLSX"
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {
+          "fileName": "=Avaliações_{{ $('Loop Consultores').item.json.Nome }}"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -416,
+        -16
+      ],
+      "id": "3734b68b-4d8d-4b39-952e-f43c2c74485b",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Loop Consultores').item.json.Email }}",
+        "subject": "={{ $now.format('yyyy-MM-dd') }}",
+        "message": "={{ $('AI Agent').item.json.output }}",
+        "options": {
+          "appendAttribution": false,
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -208,
+        -16
+      ],
+      "id": "0a5fa0c7-5c4c-4183-a1a9-32773754205f",
+      "name": "Enviar Feedback",
+      "webhookId": "67f3f34f-699d-402d-a521-24771b1314b0"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Agendar 21h": {
+      "main": [
+        [
+          {
+            "node": "BuscarConsultores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Consultores": {
+      "main": [
+        [],
+        [
+          {
+            "node": "BuscarAvaliações",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dados": {
+      "main": [
+        [
+          {
+            "node": "Analisar Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analisar Dados": {
+      "main": [
+        [
+          {
+            "node": "Média <7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Média <7": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Consultores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini-2.5-Flash": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BuscarAvaliações": {
+      "main": [
+        [
+          {
+            "node": "Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BuscarConsultores": {
+      "main": [
+        [
+          {
+            "node": "Loop Consultores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "BuscarAvaliações1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "BuscarAvaliações1": {
+      "main": [
+        [
+          {
+            "node": "DadosXLSX",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DadosXLSX": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Enviar Feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Feedback": {
+      "main": [
+        [
+          {
+            "node": "Loop Consultores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "c7047097-d30b-417e-b737-c8e359e49682",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "Sk28uvvS4v2GglU9",
+  "tags": []
+}
